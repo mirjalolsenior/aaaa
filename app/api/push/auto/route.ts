@@ -72,6 +72,19 @@ async function sendToAll(payload: { title: string; body: string; url: string }) 
   return results
 }
 
+async function writeLog(title: string, body: string, sent: number) {
+  try {
+    const supabase = createSupabaseAdmin()
+    const { error } = await supabase.from("push_logs").insert({ title, body, sent })
+    if (error) {
+      // If table doesn't exist yet or RLS blocks it, don't fail the whole run.
+      console.warn("[push/auto] push_logs insert error:", error.message)
+    }
+  } catch {
+    // ignore
+  }
+}
+
 async function isAlreadySentToday(markerKey: string) {
   const supabase = createSupabaseAdmin()
   const { data, error } = await supabase.from("push_meta").select("key").eq("key", markerKey).maybeSingle()
@@ -102,9 +115,14 @@ export async function GET(req: Request) {
     // Optional protection for cron calls
     const required = process.env.PUSH_CRON_KEY
     if (required) {
-      const provided = url.searchParams.get("key") || req.headers.get("x-cron-key")
-      if (!provided || provided !== required) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      // Manual run (UI test button) can bypass the cron key.
+      // NOTE: If you want strict protection, remove this and pass the key from a trusted server only.
+      const isManual = url.searchParams.get("manual") === "1"
+      if (!isManual) {
+        const provided = url.searchParams.get("key") || req.headers.get("x-cron-key")
+        if (!provided || provided !== required) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+        }
       }
     }
 
@@ -187,6 +205,7 @@ export async function GET(req: Request) {
           body,
           url: "/",
         })
+        await writeLog("Tovar kam qoldi", body, res.ok)
         await markSent(marker)
         summary.sent.push({ type: "low_stock", ...res })
       } else {
@@ -229,6 +248,7 @@ export async function GET(req: Request) {
             body: buildBody(beforeDay),
             url: "/",
           })
+          await writeLog("Zakaz 1 kun qoldi", buildBody(beforeDay), res.ok)
           await markSent(marker)
           summary.sent.push({ type: "due_orders_1day_before", count: beforeDay.length, ...res })
         } else {
@@ -246,6 +266,7 @@ export async function GET(req: Request) {
             body: buildBody(sameDay),
             url: "/",
           })
+          await writeLog("Bugun zakaz vaqti", buildBody(sameDay), res.ok)
           await markSent(marker)
           summary.sent.push({ type: "due_orders_today", count: sameDay.length, ...res })
         } else {
@@ -263,6 +284,7 @@ export async function GET(req: Request) {
             body: buildBody(overdue),
             url: "/",
           })
+          await writeLog("Zakaz muddati o'tib ketdi", buildBody(overdue), res.ok)
           await markSent(marker)
           summary.sent.push({ type: "due_orders_overdue", count: overdue.length, ...res })
         } else {

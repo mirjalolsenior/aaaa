@@ -13,13 +13,13 @@ Keyin (tavsiya) takror yuborilmasligi uchun `scripts/005_push_meta.sql` ni ham i
 ## 2) VAPID key yarating
 Terminalda:
 
-\`\`\`bash
+```bash
 node scripts/generate-vapid.mjs
-\`\`\`
+```
 
 ## 3) Netlify (yoki hosting) env qo‘ying
 
-\`\`\`bash
+```bash
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=...  # generate-vapid chiqargan public key
 VAPID_PRIVATE_KEY=...             # generate-vapid chiqargan private key
 VAPID_SUBJECT=mailto:you@example.com
@@ -35,7 +35,7 @@ PUSH_CRON_KEY=your_secret_key
 # - zakaz 1 kun oldin + o‘sha kuni
 LOW_STOCK_THRESHOLD=10
 ORDER_NOTIFY_DAYS_BEFORE=1
-\`\`\`
+```
 
 > Eslatma: `SUPABASE_SERVICE_ROLE_KEY` maxfiy — uni faqat server env’da saqlang.
 
@@ -60,6 +60,6 @@ Shuning uchun alohida cron-job qo‘yish shart emas.
 ### Boshqa hosting bo‘lsa
 Siz baribir shu endpoint’ni cron bilan chaqirishingiz mumkin:
 
-\`\`\`
+```
 GET /api/push/auto?key=YOUR_PUSH_CRON_KEY
-\`\`\`
+```

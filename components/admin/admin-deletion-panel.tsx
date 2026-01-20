@@ -113,7 +113,7 @@ export function AdminDeletionPanel() {
     setLoadingStates((prev) => ({ ...prev, [option.id]: true }))
 
     try {
-      const { error } = await supabase.from(option.table).delete().gt("id", "")
+      const { error } = await supabase.from(option.table).delete().neq("id", "never-match") // This will delete all records
 
       if (error) {
         console.error(`Error deleting ${option.table}:`, error)
@@ -134,7 +134,7 @@ export function AdminDeletionPanel() {
 
     try {
       const deletePromises = deletionOptions.map((option) =>
-        supabase.from(option.table).delete().gt("id", ""),
+        supabase.from(option.table).delete().neq("id", "never-match"),
       )
 
       const results = await Promise.allSettled(deletePromises)

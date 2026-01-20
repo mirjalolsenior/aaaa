@@ -85,14 +85,13 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
 
         {/* Admin Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="overview">Umumiy</TabsTrigger>
             <TabsTrigger value="database">Ma'lumotlar</TabsTrigger>
             <TabsTrigger value="edit">Tahrirlash</TabsTrigger>
             <TabsTrigger value="deletion">Ochirish</TabsTrigger>
             <TabsTrigger value="selective">Tanlab ochirish</TabsTrigger>
             <TabsTrigger value="users">Foydalanuvchilar</TabsTrigger>
-            <TabsTrigger value="settings">Sozlamalar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -226,25 +225,6 @@ export function AdminPanel({ onLogout }: AdminPanelProps) {
             </Card>
           </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="glass-card animate-slideIn">
-              <CardHeader>
-                <CardTitle>Tizim sozlamalari</CardTitle>
-                <CardDescription>Umumiy tizim sozlamalari</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="text-center py-8">
-                    <Settings className="w-16 h-16 text-muted-foreground mx-auto mb-4 animate-float" />
-                    <h3 className="text-lg font-semibold mb-2">Tizim sozlamalari</h3>
-                    <p className="text-muted-foreground">
-                      Bu yerda tizim sozlamalarini o'zgartirish imkoniyatlari bo'ladi
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
         </Tabs>
       </div>
     </div>

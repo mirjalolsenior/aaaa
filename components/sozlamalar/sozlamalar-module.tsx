@@ -3,6 +3,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { PushControls } from "@/components/push/push-controls"
 import { Bell, Info } from "lucide-react"
+import PushStatus from "@/components/sozlamalar/push-status"
+import PushLog from "@/components/sozlamalar/push-log"
 
 export function SozlamalarModule() {
   return (
@@ -29,6 +31,10 @@ export function SozlamalarModule() {
               </div>
             </div>
             <PushControls />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <PushStatus />
+              <PushLog />
+            </div>
           </div>
         </CardContent>
       </Card>
