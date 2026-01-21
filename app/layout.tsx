@@ -2,7 +2,9 @@ import type React from "react"
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { Roboto_Mono } from "next/font/google"
+import { Analytics } from "@vercel/analytics/next"
 import { Suspense } from "react"
+import { PWAProvider } from "@/components/pwa/pwa-provider"
 import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
@@ -24,9 +26,9 @@ export const metadata: Metadata = {
     telephone: false,
   },
   icons: {
-    icon: "/icon-light-32x32.png",
-    shortcut: "/icon-light-32x32.png",
-    apple: "/apple-icon.png",
+    icon: "/icon-192.png",
+    shortcut: "/icon-192.png",
+    apple: "/apple-touch-icon.png",
   },
   appleWebApp: {
     capable: true,
@@ -50,10 +52,13 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="msapplication-TileColor" content="#6366f1" />
         <meta name="msapplication-tap-highlight" content="no" />
-        <link rel="apple-touch-icon" href="/apple-icon.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
       </head>
       <body className={`font-sans ${inter.variable} ${robotoMono.variable} bg-background min-h-screen`}>
-        <Suspense fallback={null}>{children}</Suspense>
+        <PWAProvider>
+          <Suspense fallback={null}>{children}</Suspense>
+        </PWAProvider>
+        <Analytics />
         <Toaster />
       </body>
     </html>

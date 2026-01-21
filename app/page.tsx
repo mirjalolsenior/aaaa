@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Navigation } from "@/components/navigation"
 import { Header } from "@/components/header"
 import { TovarlarModule } from "@/components/tovarlar/tovarlar-module"
@@ -10,10 +10,30 @@ import { KronkaModule } from "@/components/kronka/kronka-module"
 import { ArxivModule } from "@/components/arxiv/arxiv-module"
 import { AdminModule } from "@/components/admin/admin-module"
 import { HisobotlarModule } from "@/components/hisobotlar/hisobotlar-module"
-import { SozlamalarModule } from "@/components/sozlamalar/sozlamalar-module"
+import { NotificationManager } from "@/components/pwa/notification-manager"
+import { usePWA } from "@/components/pwa/pwa-provider"
+import { useNotificationMonitor } from "@/lib/hooks/useNotificationMonitor"
 
 export default function HomePage() {
   const [activeTab, setActiveTab] = useState("tovarlar")
+  const { sendNotification, notificationPermission } = usePWA()
+
+  useNotificationMonitor({
+    checkInterval: 5 * 60 * 1000, // Check every 5 minutes
+    lowStockThreshold: 10, // Alert when stock < 10
+  })
+
+  useEffect(() => {
+    // Example: Send welcome notification when app loads
+    if (notificationPermission === "granted") {
+      setTimeout(() => {
+        sendNotification(
+          "Sherdor Mebel tizimiga xush kelibsiz!",
+          "Biznes boshqaruv tizimi tayyor. Barcha modullar faol.",
+        )
+      }, 2000)
+    }
+  }, [notificationPermission, sendNotification])
 
   const getPageTitle = (tab: string) => {
     switch (tab) {
@@ -61,17 +81,6 @@ export default function HomePage() {
     }
   }
 
-  const Placeholder = ({ title, subtitle }: { title: string; subtitle: string }) => (
-    <div className="glass-card rounded-2xl p-8 min-h-[600px] animate-fadeIn">
-      <div className="flex items-center justify-center h-full">
-        <div className="text-center animate-slideIn">
-          <h3 className="text-2xl font-semibold text-foreground mb-4">{title}</h3>
-          <p className="text-muted-foreground">{subtitle}</p>
-        </div>
-      </div>
-    </div>
-  )
-
   const renderContent = () => {
     switch (activeTab) {
       case "tovarlar":
@@ -89,9 +98,18 @@ export default function HomePage() {
       case "admin":
         return <AdminModule />
       case "sozlamalar":
-        return <SozlamalarModule />
+        return <NotificationManager />
       default:
-        return <Placeholder title={`${getPageTitle(activeTab)} moduli`} subtitle={getPageSubtitle(activeTab)} />
+        return (
+          <div className="glass-card rounded-2xl p-8 min-h-[600px] animate-fadeIn">
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center animate-slideIn">
+                <h3 className="text-2xl font-semibold text-foreground mb-4">{getPageTitle(activeTab)} moduli</h3>
+                <p className="text-muted-foreground">{getPageSubtitle(activeTab)}</p>
+              </div>
+            </div>
+          </div>
+        )
     }
   }
 

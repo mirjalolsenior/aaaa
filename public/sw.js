@@ -1,8 +1,7 @@
-// Service Worker (offline cache + push)
-// NOTE: Keep fetch caching simple and safe (avoid Response.clone() errors).
+// Service Worker with Web Push API support for Android and iOS PWA
 
-const CACHE_NAME = "sherdor-mebel-v2"
-const urlsToCache = ["/", "/manifest.json", "/icon-192.jpg", "/icon-512.jpg"]
+const CACHE_NAME = "sherdor-mebel-v1"
+const urlsToCache = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png", "/logo.png"]
 
 self.addEventListener("install", (event) => {
   console.log("[SW] Installing service worker...")
@@ -21,40 +20,22 @@ self.addEventListener("install", (event) => {
 })
 
 self.addEventListener("fetch", (event) => {
-  const req = event.request
-
-  // Only cache GET requests.
-  if (req.method !== "GET") return
-
-  // Only cache same-origin requests (avoid opaque/cross-origin cloning issues).
-  const url = new URL(req.url)
-  if (url.origin !== self.location.origin) return
+  if (event.request.method !== "GET") {
+    return
+  }
 
   event.respondWith(
-    (async () => {
-      const cache = await caches.open(CACHE_NAME)
-
-      // Cache-first for better offline UX.
-      const cached = await cache.match(req)
-      if (cached) return cached
-
-      const res = await fetch(req)
-
-      // Cache only OK basic responses.
-      if (res && res.ok && res.type === "basic") {
-        try {
-          await cache.put(req, res.clone())
-        } catch (e) {
-          // If caching fails for any reason, still return network response.
-          console.warn("[SW] Cache put failed:", e)
+    fetch(event.request)
+      .then((response) => {
+        if (response.ok) {
+          const cache = caches.open(CACHE_NAME)
+          cache.then((c) => c.put(event.request, response.clone()))
         }
-      }
-
-      return res
-    })().catch(async () => {
-      const cache = await caches.open(CACHE_NAME)
-      return (await cache.match(req)) || new Response("Offline")
-    }),
+        return response
+      })
+      .catch(() => {
+        return caches.match(event.request).then((response) => response || new Response("Offline"))
+      }),
   )
 })
 
@@ -77,47 +58,96 @@ self.addEventListener("activate", (event) => {
   )
 })
 
-// --- Push notifications (Android Chrome + iOS 16.4+ installed PWA) ---
-
 self.addEventListener("push", (event) => {
-  let data = {}
-  try {
-    data = event.data ? event.data.json() : {}
-  } catch {
-    data = { body: event.data ? event.data.text() : "" }
+  console.log("[SW] Push notification received:", event)
+
+  let notificationData = {
+    title: "Sherdor Mebel",
+    body: "Yangi xabar",
+    icon: "/icon-192.png",
+    badge: "/icon-192.png",
+    vibrate: [100, 50, 100],
+    tag: "sherdor-mebel-notification",
+    requireInteraction: true,
   }
 
-  const title = data.title || "Mebel Sherdor"
-  const options = {
-    body: data.body || "",
-    icon: "/icon-192.jpg",
-    badge: "/icon-192.jpg",
-    data: { url: data.url || "/" },
+  if (event.data) {
+    try {
+      const data = event.data.json()
+      notificationData = { ...notificationData, ...data }
+    } catch (error) {
+      notificationData.body = event.data.text()
+    }
   }
 
-  event.waitUntil(self.registration.showNotification(title, options))
+  event.waitUntil(
+    self.registration.showNotification(notificationData.title, {
+      body: notificationData.body,
+      icon: notificationData.icon,
+      badge: notificationData.badge,
+      vibrate: notificationData.vibrate,
+      tag: notificationData.tag,
+      requireInteraction: notificationData.requireInteraction,
+      data: {
+        dateOfArrival: Date.now(),
+        url: "/",
+      },
+      actions: [
+        {
+          action: "explore",
+          title: "Ko'rish",
+          icon: "/icon-192.png",
+        },
+        {
+          action: "close",
+          title: "Yopish",
+          icon: "/icon-192.png",
+        },
+      ],
+    }),
+  )
 })
 
 self.addEventListener("notificationclick", (event) => {
+  console.log("[SW] Notification clicked:", event.action)
   event.notification.close()
-  const url = event.notification?.data?.url || "/"
+
+  const urlToOpen = event.notification.data?.url || "/"
 
   event.waitUntil(
-    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ("focus" in client) {
-          client.focus()
-          if ("navigate" in client) {
-            try {
-              client.navigate(url)
-            } catch {}
+    clients
+      .matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      })
+      .then((clientList) => {
+        // Try to focus existing window
+        for (const client of clientList) {
+          if (client.url === urlToOpen && "focus" in client) {
+            return client.focus()
           }
-          return
         }
-      }
-      if (self.clients.openWindow) {
-        return self.clients.openWindow(url)
-      }
-    }),
+        // Open new window if no match
+        if (clients.openWindow) {
+          return clients.openWindow(urlToOpen)
+        }
+      }),
   )
+})
+
+self.addEventListener("notificationclose", (event) => {
+  console.log("[SW] Notification closed by user:", event.notification.tag)
+})
+
+self.addEventListener("message", (event) => {
+  console.log("[SW] Message received:", event.data)
+
+  if (event.data.type === "SKIP_WAITING") {
+    self.skipWaiting()
+  }
+
+  if (event.data.type === "SYNC_SUBSCRIPTION") {
+    // Handle subscription sync if needed
+    console.log("[SW] Syncing subscription status")
+  }
 })
