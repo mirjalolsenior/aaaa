@@ -1,8 +1,8 @@
 {
   "crons": [
     {
-      "path": "/api/push-cron",
-      "schedule": "0 8 * * *"
+      "path": "/api/push-cron?key=your_secret_key",
+      "schedule": "0 * * * *"
     }
   ]
 }

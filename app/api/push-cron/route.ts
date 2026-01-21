@@ -5,12 +5,46 @@ export const maxDuration = 60
 
 export async function GET(request: Request) {
   try {
+    const triggeredAt = new Date().toISOString()
+    
+    // Authorization: Check header first, then query parameter as fallback
     const authHeader = request.headers.get("authorization")
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const url = new URL(request.url)
+    const queryKey = url.searchParams.get("key")
+    
+    const expectedSecret = process.env.CRON_SECRET
+    let isAuthorized = false
+    let authSource = "unknown"
+    
+    if (expectedSecret) {
+      // Check Bearer token in Authorization header
+      if (authHeader === `Bearer ${expectedSecret}`) {
+        isAuthorized = true
+        authSource = "header"
+      }
+      // Fallback: Check query parameter
+      else if (queryKey === expectedSecret) {
+        isAuthorized = true
+        authSource = "query"
+      }
+    }
+    
+    // Reject if authorization failed and secret is set
+    if (expectedSecret && !isAuthorized) {
+      console.error(`[Cron] Unauthorized attempt at ${triggeredAt}. Auth source attempted: ${authSource}`)
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Unauthorized",
+          triggeredAt,
+          source: "vercel-cron",
+        },
+        { status: 401 },
+      )
     }
 
-    console.log("[Cron] Starting notification checks...")
+    console.log(`[Cron] Starting automatic notification checks at ${triggeredAt} (UTC)`)
+    console.log(`[Cron] Authorization verified via: ${authSource}`)
     const startTime = Date.now()
 
     const [deliveryResult, inventoryResult] = await Promise.allSettled([
@@ -20,10 +54,15 @@ export async function GET(request: Request) {
 
     const duration = Date.now() - startTime
 
+    const completedAt = new Date().toISOString()
+    console.log(`[Cron] Notification checks completed in ${duration}ms`)
+
     return NextResponse.json(
       {
-        success: true,
-        message: "Notification checks completed",
+        ok: true,
+        triggeredAt,
+        completedAt,
+        source: "vercel-cron",
         duration: `${duration}ms`,
         checks: [
           {
@@ -37,17 +76,18 @@ export async function GET(request: Request) {
             error: inventoryResult.status === "rejected" ? inventoryResult.reason?.message : null,
           },
         ],
-        timestamp: new Date().toISOString(),
       },
       { status: 200 },
     )
   } catch (error) {
-    console.error("[Cron] Error in push-cron endpoint:", error)
+    const triggeredAt = new Date().toISOString()
+    console.error(`[Cron] Error in push-cron endpoint at ${triggeredAt}:`, error)
     return NextResponse.json(
       {
-        success: false,
+        ok: false,
         error: error instanceof Error ? error.message : "Unknown error",
-        timestamp: new Date().toISOString(),
+        triggeredAt,
+        source: "vercel-cron",
       },
       { status: 500 },
     )
@@ -55,5 +95,5 @@ export async function GET(request: Request) {
 }
 
 export async function HEAD() {
-  return NextResponse.json({ status: "ok" })
+  return NextResponse.json({ ok: true })
 }
