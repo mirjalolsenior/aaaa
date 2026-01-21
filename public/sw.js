@@ -1,8 +1,7 @@
 // Service Worker with Web Push API support for Android and iOS PWA
 
-const CACHE_NAME = "sherdor-mebel-v1"
-const urlsToCache = ["/", "/manifest.json", "/icon-192.png", "/icon-512.png", "/logo.png"]
-
+const CACHE_NAME = "sherdor-mebel-v3"
+const urlsToCache = ["/", "/manifest.json", "/logo.png"]
 self.addEventListener("install", (event) => {
   console.log("[SW] Installing service worker...")
   event.waitUntil(
@@ -64,8 +63,8 @@ self.addEventListener("push", (event) => {
   let notificationData = {
     title: "Sherdor Mebel",
     body: "Yangi xabar",
-    icon: "/icon-192.png",
-    badge: "/icon-192.png",
+    icon: "/logo.png",
+    badge: "/logo.png",
     vibrate: [100, 50, 100],
     tag: "sherdor-mebel-notification",
     requireInteraction: true,
@@ -96,12 +95,12 @@ self.addEventListener("push", (event) => {
         {
           action: "explore",
           title: "Ko'rish",
-          icon: "/icon-192.png",
+          icon: "/logo.png",
         },
         {
           action: "close",
           title: "Yopish",
-          icon: "/icon-192.png",
+          icon: "/logo.png",
         },
       ],
     }),
